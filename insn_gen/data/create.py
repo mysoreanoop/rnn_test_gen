@@ -1,3 +1,6 @@
+import os
+os.system('xz -d instruction_dump.xz')
+
 file = open('instruction_dump', mode='r')
 lines = file.read().splitlines()
 file.close()
