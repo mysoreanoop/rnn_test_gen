@@ -43,23 +43,38 @@ def train(dataset, model):
     dataloader = DataLoader(dataset, batch_size=batch_size)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
+    save_loss = []
 
-    for epoch in range(max_epochs):
-        hidden, carry = model.init_state(sequence_length)
+    checkpoint = torch.load("checkpoint.pt")
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    epoch = checkpoint['epoch']
+    loss = checkpoint['loss']
 
-        for batch, (x, y) in enumerate(dataloader):
-            optimizer.zero_grad()
+    #for epoch in range(max_epochs):
+    #    hidden, carry = model.init_state(sequence_length)
 
-            y_pred, (hidden, carry) = model(x, (hidden, carry))
-            loss = criterion(y_pred.transpose(1, 2), y)
+    #    for batch, (x, y) in enumerate(dataloader):
+    #        optimizer.zero_grad()
 
-            hidden = hidden.detach()
-            carry = carry.detach()
+    #        y_pred, (hidden, carry) = model(x, (hidden, carry))
+    #        loss = criterion(y_pred.transpose(1, 2), y)
 
-            loss.backward()
-            optimizer.step()
+    #        hidden = hidden.detach()
+    #        carry = carry.detach()
 
-            print(f"epoch {epoch}.{batch} | loss = {(loss.item()):3.3f}")
+    #        loss.backward()
+    #        optimizer.step()
+    #        if ((epoch+1)*(batch+1)-1+batch) % 100 == 0:
+    #            save_loss.append(loss.item())
+    #        print(f"epoch {epoch}.{batch} | loss = {(loss.item()):3.3f}")
+    #        	
+    #    torch.save({
+    #        'epoch': epoch,
+    #        'model_state_dict': model.state_dict(),
+    #        'optimizer_state_dict': optimizer.state_dict(),
+    #        'loss': loss,
+    #        }, "checkpoint.pt")
 
 
 def predict(dataset, model, text, next_words=100):
@@ -79,12 +94,18 @@ def predict(dataset, model, text, next_words=100):
 
     return words
 
-max_epochs=10
-batch_size=2048
+max_epochs=8
+batch_size=256
 sequence_length=4
 
 dataset = Dataset()
 model = LSTM(dataset)
 
 train(dataset, model)
-print(predict(dataset, model, text="or a5,a1,a2;addi a1,sp,8;mv t3,a0;"))
+
+for i in range(200):
+    file = open(f"data/generated/test_{i}", "w")
+    lines = predict(dataset, model, text="or a5,a1,a2;addi a1,sp,8;mv t3,a0;")
+    for line in lines:
+        file.write(line + "\n")
+    file.close()
